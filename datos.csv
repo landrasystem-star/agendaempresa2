@@ -1,0 +1,16 @@
+nombre,telefono,email,emergencia
+RECEPCION,+34911234567,recepcion@empresa.com,true
+RRHH,+34911234568,rrhh@empresa.com,true
+SEGURIDAD,+34911234569,seguridad@empresa.com,true
+OFICINA TECNICA,+34911234570,tecnica@empresa.com,false
+MANTENIMIENTO,+34911234571,mantenimiento@empresa.com,false
+ADMINISTRACION,+34911234572,admin@empresa.com,false
+INFORMATICA,+34911234573,informatica@empresa.com,false
+JEFE DE OBRA,+34600111222,jefe.obra@empresa.com,true
+ENCARGADO,+34600333444,encargado@empresa.com,false
+RRHH MOVIL,+34600555666,rrhh.movil@empresa.com,false
+SEGURIDAD MOVIL,+34600777888,seguridad.movil@empresa.com,false
+BOMBEROS,112,bomberos@emergencias.es,true
+AMBULANCIA,112,ambulancia@emergencias.es,true
+HOSPITAL,+34911234599,hospital@salud.es,true
+POLICIA,112,policia@seguridad.es,true
