@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <meta name="theme-color" content="#0c2461" />
+    <title>🚨 Agenda Empresa NFC</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body {
+            background: linear-gradient(145deg, #0c2461 0%, #1e3799 50%, #0c2461 100%);
+            min-height: 100vh;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .app {
+            max-width: 520px;
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(16px);
+            border-radius: 28px;
+            padding: 24px 20px 28px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #fff;
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+        .header h1 span {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p {
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+        .badge-nfc {
+            background: linear-gradient(135deg, #8e44ad, #732d91);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            display: inline-block;
+            margin-top: 6px;
+        }
+        .badge-offline {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            display: none;
+        }
+        .badge-offline.show { display: inline-block; }
+
+        .status {
+            background: rgba(255,255,255,0.04);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: 0.3s;
+        }
+        .status.loading { color: #fdcb6e; border-color: rgba(253,203,110,0.2); animation: pulse 1.2s infinite; }
+        .status.success { color: #00b894; border-color: rgba(0,184,148,0.2); }
+        .status.error { color: #ff6b6b; border-color: rgba(255,107,107,0.2); }
+        .status.info { color: #74b9ff; border-color: rgba(116,185,255,0.15); }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .nfc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .nfc-grid .full { grid-column: 1 / -1; }
+        .nfc-btn {
+            padding: 14px 12px;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #fff;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .nfc-btn:active { transform: scale(0.95); }
+        .nfc-btn.primary { background: #0984e3; box-shadow: 0 4px 20px rgba(9,132,227,0.25); }
+        .nfc-btn.success { background: #00b894; box-shadow: 0 4px 20px rgba(0,184,148,0.25); }
+        .nfc-btn.purple { background: #8e44ad; box-shadow: 0 4px 20px rgba(142,68,173,0.25); }
+        .nfc-btn.whatsapp { background: #25d366; box-shadow: 0 4px 20px rgba(37,211,102,0.25); }
+        .nfc-btn.teal { background: #1abc9c; color: #1a1a2e; box-shadow: 0 4px 20px rgba(26,188,156,0.2); }
+        .nfc-btn.danger { background: #e74c3c; box-shadow: 0 4px 20px rgba(231,76,60,0.2); }
+        .nfc-btn.orange { background: #e67e22; box-shadow: 0 4px 20px rgba(230,126,34,0.2); }
+        .nfc-btn .icon { font-size: 1.2rem; }
+        .nfc-btn .label { font-size: 0.75rem; }
+
+        .cache-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 4px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            margin-bottom: 14px;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.2);
+        }
+        .cache-info .badge {
+            background: rgba(255,255,255,0.06);
+            padding: 4px 12px;
+            border-radius: 30px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 4px 0 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .contact-list::-webkit-scrollbar { width: 3px; }
+        .contact-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+        .contact-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: 0.2s;
+            gap: 10px;
+        }
+        .contact-card:active { transform: scale(0.97); }
+        .contact-card .info { flex: 1; min-width: 0; }
+        .contact-card .name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .contact-card .phone {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin-top: 2px;
+        }
+        .contact-card .email {
+            color: rgba(255,255,255,0.3);
+            font-size: 0.75rem;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin-top: 2px;
+        }
+        .contact-card .badge-emergency {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+        .contact-card .badge-manual {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+        .contact-card .actions { 
+            display: flex; 
+            gap: 6px; 
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .contact-card .actions button {
+            border: none;
+            border-radius: 30px;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .contact-card .actions button:active { transform: scale(0.9); }
+        .contact-card .actions .call { background: #00b894; }
+        .contact-card .actions .whatsapp { background: #25d366; }
+        .contact-card .actions .email-btn { background: #3498db; }
+        .contact-card .actions .del { background: rgba(231,76,60,0.6); padding: 8px 12px; }
+
+        .contact-empty {
+            text-align: center;
+            color: rgba(255,255,255,0.15);
+            padding: 30px 0;
+            font-size: 0.9rem;
+        }
+        .contact-empty span { font-size: 2rem; display: block; margin-bottom: 8px; }
+
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed rgba(255,255,255,0.08);
+            border-radius: 16px;
+            background: transparent;
+            color: rgba(255,255,255,0.25);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 2px;
+        }
+        .btn-add:active { background: rgba(255,255,255,0.04); transform: scale(0.98); }
+
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.06);
+            font-size: 0.6rem;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 420px) {
+            .app { padding: 16px 14px 20px; }
+            .nfc-grid { grid-template-columns: 1fr 1fr; }
+            .nfc-btn { font-size: 0.7rem; padding: 12px 8px; }
+            .nfc-btn .icon { font-size: 1rem; }
+            .contact-card { padding: 12px 14px; }
+            .contact-card .name { font-size: 0.9rem; }
+            .contact-card .actions button { padding: 6px 10px; font-size: 0.55rem; }
+        }
+        @media (max-width: 360px) {
+            .nfc-grid { grid-template-columns: 1fr; }
+            .nfc-grid .full { grid-column: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <div class="header">
+            <h1>🏢 <span>Empresa</span></h1>
+            <p>Agenda NFC · CSV + Manuales</p>
+            <span class="badge-nfc">📲 ANDROID + CHROME</span>
+            <span class="badge-offline" id="badgeOffline">📶 OFFLINE</span>
+        </div>
+
+        <div class="status" id="status">📡 Cargando...</div>
+
+        <div class="nfc-grid">
+            <button class="nfc-btn primary" id="btnLeerNFC">
+                <span class="icon">📖</span>
+                <span class="label">LEER NFC</span>
+            </button>
+            <button class="nfc-btn success" id="btnEscribirNFC">
+                <span class="icon">💾</span>
+                <span class="label">ESCRIBIR</span>
+            </button>
+            <button class="nfc-btn purple" id="btnExportar">
+                <span class="icon">⬇️</span>
+                <span class="label">EXPORTAR JSON</span>
+            </button>
+            <button class="nfc-btn teal" id="btnImportar">
+                <span class="icon">⬆️</span>
+                <span class="label">IMPORTAR JSON</span>
+            </button>
+            <button class="nfc-btn orange full" id="btnExportarCSV">
+                <span class="icon">📄</span>
+                <span class="label">EXPORTAR CSV (editable)</span>
+            </button>
+            <button class="nfc-btn whatsapp full" id="btnWhatsApp">
+                <span class="icon">💬</span>
+                <span class="label">WHATSAPP</span>
+            </button>
+            <button class="nfc-btn danger full" id="btnRecargarGitHub">
+                <span class="icon">🔄</span>
+                <span class="label">RECARGAR CSV DE GITHUB</span>
+            </button>
+        </div>
+
+        <div class="cache-info">
+            <span id="cacheInfo">📦 Cargando...</span>
+            <span class="badge" id="contactCount">0 contactos</span>
+        </div>
+
+        <div class="contact-list" id="contactList">
+            <div class="contact-empty">
+                <span>📭</span>
+                Cargando contactos...
+            </div>
+        </div>
+
+        <button class="btn-add" id="btnAdd">➕ Añadir contacto manual</button>
+
+        <div class="footer">Agenda Empresa · v4.1 · CSV + Manuales fusionados</div>
+    </div>
+
+    <script>
+        // ==================== NOTIFICACIONES ====================
+        function mostrarNotificacion(mensaje, tipo = "info", duracion = 2500) {
+            const tipos = { "success": "✅", "error": "❌", "info": "ℹ️", "warning": "⚠️" };
+            const colores = { "success": "#00b894", "error": "#e74c3c", "info": "#3498db", "warning": "#f39c12" };
+            const icon = tipos[tipo] || "ℹ️";
+            
+            const notification = document.createElement("div");
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 9999;
+                background: #2c3e50; color: white; padding: 14px 20px;
+                border-radius: 10px; border-left: 5px solid ${colores[tipo] || '#3498db'};
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out; max-width: 350px;
+                font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 10px;
+            `;
+            notification.innerHTML = `<span>${icon}</span> ${mensaje}`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = "slideOut 0.3s ease-in forwards";
+                setTimeout(() => notification.remove(), 300);
+            }, duracion);
+        }
+
+        if (!document.querySelector('#slideStyle')) {
+            const style = document.createElement('style');
+            style.id = 'slideStyle';
+            style.innerHTML = `
+                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // ==================== CONFIGURACIÓN ====================
+        let contactos = [];
+        let nfcActivo = false;
+        let ndefReader = null;
+
+        // ==================== CARGAR DESDE CSV (GitHub) ====================
+        async function cargarDesdeURL() {
+            try {
+                const response = await fetch('datos.csv');
+                if (!response.ok) {
+                    console.log('⚠️ No se encontró datos.csv');
+                    return null;
+                }
+                const texto = await response.text();
+                
+                const lineas = texto.trim().split('\n');
+                if (lineas.length < 2) return null;
+                
+                const cabeceras = lineas[0].split(',').map(h => h.trim().toLowerCase());
+                
+                const contactos = [];
+                for (let i = 1; i < lineas.length; i++) {
+                    const valores = lineas[i].split(',').map(v => v.trim());
+                    if (valores.length < 2) continue;
+                    
+                    const contacto = {};
+                    cabeceras.forEach((cab, idx) => {
+                        contacto[cab] = valores[idx] || '';
+                    });
+                    
+                    contacto.emergencia = contacto.emergencia === 'true' || 
+                                          contacto.emergencia === '1' || 
+                                          contacto.emergencia === 'si';
+                    
+                    // ✅ MARCAR ORIGEN
+                    contacto.origen = 'csv';
+                    
+                    contactos.push(contacto);
+                }
+                
+                console.log(`✅ CSV leído: ${contactos.length} contactos`);
+                return contactos.length > 0 ? contactos : null;
+            } catch (error) {
+                console.error('Error leyendo CSV:', error);
+                return null;
+            }
+        }
+
+        // ==================== CARGAR DESDE CACHÉ ====================
+        function cargarDesdeCache() {
+            try {
+                const data = localStorage.getItem('agenda_contactos');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        // ==================== LISTA NEGRA ====================
+        function cargarEliminados() {
+            try {
+                const data = localStorage.getItem('agenda_eliminados');
+                if (data) return JSON.parse(data);
+            } catch (e) {}
+            return [];
+        }
+
+        function guardarEliminados(eliminados) {
+            try {
+                localStorage.setItem('agenda_eliminados', JSON.stringify(eliminados));
+            } catch (e) {}
+        }
+
+        // ==================== CARGAR CONTACTOS (FUSIÓN) ====================
+        async function cargarContactos() {
+            const eliminados = cargarEliminados();
+            
+            // 1. Leer CSV de GitHub
+            let contactosURL = await cargarDesdeURL();
+            
+            // 2. Leer caché local
+            let contactosCache = cargarDesdeCache();
+            
+            // 3. Separar manuales de los del CSV (caché)
+            let manuales = [];
+            let csvViejos = [];
+            
+            if (contactosCache && contactosCache.length > 0) {
+                for (const c of contactosCache) {
+                    if (c.origen === 'manual') {
+                        manuales.push(c);
+                    } else {
+                        csvViejos.push(c);
+                    }
+                }
+                console.log(`📋 Caché: ${manuales.length} manuales, ${csvViejos.length} del CSV`);
+            }
+            
+            // 4. Decidir lista base
+            if (contactosURL && contactosURL.length > 0) {
+                // ✅ PRIORIDAD 1: CSV de GitHub (reemplaza CSV viejos)
+                contactos = [...contactosURL, ...manuales];
+                console.log(`✅ Fusionado: ${contactosURL.length} del CSV + ${manuales.length} manuales`);
+            } else if (csvViejos.length > 0 || manuales.length > 0) {
+                // ✅ PRIORIDAD 2: Usar caché (no hay CSV de GitHub)
+                contactos = [...csvViejos, ...manuales];
+                console.log(`📦 Usando caché: ${contactos.length} contactos`);
+            } else {
+                // ✅ PRIORIDAD 3: No hay nada
+                contactos = [];
+                mostrarNotificacion('⚠️ No hay contactos. Usa "RECARGAR" si tienes internet.', 'warning', 5000);
+            }
+            
+            // 5. Filtrar eliminados (lista negra)
+            const antes = contactos.length;
+            contactos = contactos.filter(c => !eliminados.includes(c.telefono));
+            const filtrados = antes - contactos.length;
+            if (filtrados > 0) {
+                console.log(`🚫 ${filtrados} contactos filtrados por lista negra`);
+            }
+            
+            // 6. Mostrar
+            renderizar();
+            guardarLocal();
+            
+            // 7. Estado
+            if (contactos.length === 0) {
+                document.getElementById('status').textContent = '📭 Sin contactos';
+                document.getElementById('status').className = 'status error';
+            } else {
+                const numManuales = contactos.filter(c => c.origen === 'manual').length;
+                document.getElementById('status').textContent = `📋 ${contactos.length} contactos (${numManuales} manuales)`;
+                document.getElementById('status').className = 'status success';
+            }
+        }
+
+        // ==================== INTERFAZ ====================
+        function setStatus(msg, type = '') {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        function renderizar() {
+            const list = document.getElementById('contactList');
+            if (contactos.length === 0) {
+                list.innerHTML = `
+                    <div class="contact-empty">
+                        <span>📭</span>
+                        No hay contactos<br>
+                        <small style="color:rgba(255,255,255,0.1);font-size:0.7rem;">
+                            Usa "RECARGAR" si tienes internet
+                        </small>
+                    </div>
+                `;
+                document.getElementById('contactCount').textContent = '0 contactos';
+                return;
+            }
+            list.innerHTML = '';
+            contactos.forEach((c, i) => {
+                const badgeEmergencia = c.emergencia ? `<span class="badge-emergency">🚨 EMERGENCIA</span>` : '';
+                const badgeManual = c.origen === 'manual' ? `<span class="badge-manual">✏️ MANUAL</span>` : '';
+                const showWhatsApp = navigator.onLine ? 
+                    `<button class="whatsapp" onclick="abrirWhatsApp(${i})">💬 WA</button>` : '';
+                const showEmail = c.email ? 
+                    `<button class="email-btn" onclick="enviarEmail(${i})">📧 EMAIL</button>` : '';
+                
+                const card = document.createElement('div');
+                card.className = 'contact-card';
+                card.innerHTML = `
+                    <div class="info">
+                        <div class="name">${c.nombre || 'Sin nombre'} ${badgeEmergencia} ${badgeManual}</div>
+                        <div class="phone">📞 ${c.telefono || 'Sin número'}</div>
+                        ${c.email ? `<div class="email">✉️ ${c.email}</div>` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="call" onclick="llamar(${i})">📞 LLAMAR</button>
+                        ${showWhatsApp}
+                        ${showEmail}
+                        <button class="del" onclick="eliminarContacto(${i})">✕</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            
+            const numManuales = contactos.filter(c => c.origen === 'manual').length;
+            document.getElementById('contactCount').textContent = contactos.length + ' contactos';
+            document.getElementById('cacheInfo').textContent = `📦 ${contactos.length} contactos (${numManuales} manuales)`;
+            
+            const badge = document.getElementById('badgeOffline');
+            if (!navigator.onLine) {
+                badge.classList.add('show');
+            } else {
+                badge.classList.remove('show');
+            }
+        }
+
+        function llamar(index) {
+            const num = contactos[index]?.telefono;
+            if (!num) return;
+            const limpio = num.replace(/[\s\-\(\)]/g, '');
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                window.location.href = 'tel:' + limpio;
+            } else {
+                alert(`📞 Llama al: ${num}`);
+            }
+        }
+
+        function abrirWhatsApp(index) {
+            if (!navigator.onLine) {
+                mostrarNotificacion('⚠️ Sin conexión', 'error');
+                return;
+            }
+            const num = contactos[index]?.telefono;
+            if (!num) return;
+            const limpio = num.replace(/[\s\-\(\)]/g, '');
+            window.open('https://wa.me/' + limpio + '?text=' + encodeURIComponent('🚨 Emergencia'), '_blank');
+        }
+
+        function enviarEmail(index) {
+            const email = contactos[index]?.email;
+            if (!email) { 
+                mostrarNotificacion('⚠️ No hay email', 'error');
+                return; 
+            }
+            const asunto = encodeURIComponent('🚨 Emergencia');
+            const cuerpo = encodeURIComponent('Hola,\n\nEmergencia.\n\nGracias.');
+            window.location.href = `mailto:${email}?subject=${asunto}&body=${cuerpo}`;
+        }
+
+        // ==================== ELIMINAR CONTACTO ====================
+        function eliminarContacto(index) {
+            const contacto = contactos[index];
+            const tipo = contacto.origen === 'manual' ? 'manual' : 'del CSV';
+            
+            if (confirm(`¿Eliminar a "${contacto.nombre}" (${tipo})?`)) {
+                const nombre = contacto.nombre;
+                const telefono = contacto.telefono;
+                
+                let eliminados = cargarEliminados();
+                if (!eliminados.includes(telefono)) {
+                    eliminados.push(telefono);
+                    guardarEliminados(eliminados);
+                }
+                
+                contactos.splice(index, 1);
+                renderizar();
+                guardarLocal();
+                mostrarNotificacion(`🗑️ ${nombre} eliminado`, 'info');
+            }
+        }
+
+        // ==================== GUARDAR CACHÉ ====================
+        function guardarLocal() {
+            try {
+                localStorage.setItem('agenda_contactos', JSON.stringify(contactos));
+                localStorage.setItem('agenda_fecha', new Date().toLocaleString());
+            } catch (e) {}
+        }
+
+        // ==================== RECARGAR CSV DE GITHUB (FUSIÓN) ====================
+        async function recargarGitHub() {
+            if (!confirm('🔄 ¿Recargar contactos desde datos.csv de GitHub?\n\n✅ Se mantendrán los añadidos manualmente')) {
+                return;
+            }
+            
+            // 1. Guardar contactos actuales
+            const contactosActuales = cargarDesdeCache() || [];
+            
+            // 2. Separar manuales
+            const manuales = contactosActuales.filter(c => c.origen === 'manual');
+            console.log(`📋 ${manuales.length} contactos manuales conservados`);
+            
+            // 3. Leer CSV nuevo
+            const contactosCSV = await cargarDesdeURL();
+            
+            if (!contactosCSV) {
+                mostrarNotificacion('⚠️ No se pudo leer el CSV', 'error');
+                return;
+            }
+            
+            // 4. Fusionar: CSV nuevo + manuales
+            contactos = [...contactosCSV, ...manuales];
+            
+            // 5. Filtrar eliminados (lista negra)
+            const eliminados = cargarEliminados();
+            const antes = contactos.length;
+            contactos = contactos.filter(c => !eliminados.includes(c.telefono));
+            const filtrados = antes - contactos.length;
+            
+            // 6. Guardar y renderizar
+            renderizar();
+            guardarLocal();
+            
+            // 7. Notificación
+            mostrarNotificacion(
+                `✅ ${contactosCSV.length} del CSV + ${manuales.length} manuales`, 
+                'success', 
+                4000
+            );
+            
+            if (filtrados > 0) {
+                console.log(`🚫 ${filtrados} contactos filtrados por lista negra`);
+            }
+        }
+
+        // ==================== NFC ====================
+        function verificarNFC() {
+            if (!('NDEFReader' in window)) {
+                setStatus("❌ NFC no disponible", "error");
+                nfcActivo = false;
+                return;
+            }
+            setStatus("✅ NFC disponible", "success");
+            nfcActivo = true;
+        }
+
+        async function escribirNFC() {
+            if (!nfcActivo) { mostrarNotificacion("⚠️ NFC no disponible", "error"); return; }
+            try {
+                const urlApp = window.location.href;
+                mostrarNotificacion("🔍 Acerca un llavero NFC VACÍO...", "info", 10000);
+                setStatus("💾 Acerca la tarjeta...", "loading");
+                const writer = new NDEFReader();
+                await writer.write({ records: [{ recordType: "url", data: urlApp }] });
+                mostrarNotificacion("✅ URL guardada!", "success");
+                setStatus("✅ URL guardada", "success");
+            } catch (error) {
+                mostrarNotificacion("❌ Error: " + error.message, "error");
+                setStatus("❌ Error", "error");
+            }
+        }
+
+        async function leerNFC() {
+            if (!nfcActivo) { mostrarNotificacion("⚠️ NFC no disponible", "error"); return; }
+            try {
+                mostrarNotificacion("🔍 Acerca un llavero NFC...", "info", 15000);
+                setStatus("📡 Acerca la tarjeta...", "loading");
+                ndefReader = new NDEFReader();
+                ndefReader.addEventListener("reading", function(event) {
+                    for (const record of event.message.records) {
+                        if (record.recordType === "url") {
+                            try {
+                                const decoder = new TextDecoder();
+                                const url = decoder.decode(record.data);
+                                if (url !== window.location.href) {
+                                    setTimeout(() => {
+                                        if (confirm("Abrir enlace?\n\n" + url)) {
+                                            window.open(url, '_blank');
+                                        }
+                                    }, 500);
+                                } else {
+                                    mostrarNotificacion("✅ Ya estás aquí", "success");
+                                    setStatus("✅ Ya estás aquí", "success");
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                });
+                await ndefReader.scan();
+                setTimeout(() => {
+                    if (document.getElementById('status').textContent.includes('Acerca')) {
+                        setStatus("⏱️ Tiempo agotado", "info");
+                    }
+                }, 15000);
+            } catch (error) {
+                mostrarNotificacion("❌ Error: " + error.message, "error");
+                setStatus("❌ Error", "error");
+            }
+        }
+
+        // ==================== EXPORTAR JSON ====================
+        function exportarJSON() {
+            if (contactos.length === 0) { mostrarNotificacion("⚠️ No hay contactos", "warning"); return; }
+            const datos = { version: "1.0", fecha: new Date().toISOString(), contactos: contactos };
+            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `agenda_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            mostrarNotificacion("💾 JSON exportado (copia seguridad)", "success");
+        }
+
+        // ==================== EXPORTAR CSV ====================
+        function exportarCSV() {
+            if (contactos.length === 0) { 
+                mostrarNotificacion("⚠️ No hay contactos", "warning"); 
+                return; 
+            }
+            
+            const cabeceras = ['nombre', 'telefono', 'email', 'emergencia'];
+            
+            const filas = contactos.map(c => {
+                const nombre = (c.nombre || '').replace(/,/g, ' ');
+                const telefono = (c.telefono || '').replace(/,/g, ' ');
+                const email = (c.email || '').replace(/,/g, ' ');
+                const emergencia = c.emergencia ? 'true' : 'false';
+                return `${nombre},${telefono},${email},${emergencia}`;
+            });
+            
+            const csv = [cabeceras.join(','), ...filas].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `datos_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            mostrarNotificacion("📄 CSV exportado (editable)", "success");
+        }
+
+        // ==================== IMPORTAR JSON ====================
+        function importarJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const datos = JSON.parse(e.target.result);
+                        let nuevos = [];
+                        if (datos.contactos && Array.isArray(datos.contactos)) {
+                            nuevos = datos.contactos;
+                        } else if (Array.isArray(datos)) {
+                            nuevos = datos;
+                        } else {
+                            throw new Error('Formato inválido');
+                        }
+                        
+                        // Marcar los importados como manuales (si no tienen origen)
+                        nuevos = nuevos.map(c => ({
+                            ...c,
+                            origen: c.origen || 'manual'
+                        }));
+                        
+                        // Fusionar con los actuales (sin duplicados por teléfono)
+                        const telefonosActuales = new Set(contactos.map(c => c.telefono));
+                        let añadidos = 0;
+                        for (const c of nuevos) {
+                            if (!telefonosActuales.has(c.telefono)) {
+                                contactos.push(c);
+                                añadidos++;
+                            }
+                        }
+                        
+                        renderizar();
+                        guardarLocal();
+                        mostrarNotificacion(`✅ ${añadidos} contactos importados`, "success");
+                    } catch (error) {
+                        mostrarNotificacion("❌ Error importando", "error");
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ==================== EVENTOS ====================
+        window.addEventListener('online', () => {
+            renderizar();
+            document.getElementById('badgeOffline').classList.remove('show');
+        });
+
+        window.addEventListener('offline', () => {
+            renderizar();
+            document.getElementById('badgeOffline').classList.add('show');
+        });
+
+        document.getElementById('btnLeerNFC').addEventListener('click', leerNFC);
+        document.getElementById('btnEscribirNFC').addEventListener('click', escribirNFC);
+        document.getElementById('btnExportar').addEventListener('click', exportarJSON);
+        document.getElementById('btnImportar').addEventListener('click', importarJSON);
+        document.getElementById('btnExportarCSV').addEventListener('click', exportarCSV);
+        document.getElementById('btnRecargarGitHub').addEventListener('click', recargarGitHub);
+
+        document.getElementById('btnWhatsApp').addEventListener('click', () => {
+            if (!navigator.onLine) {
+                mostrarNotificacion('⚠️ Sin conexión', 'error');
+                return;
+            }
+            const emergencia = contactos.find(c => c.emergencia === true);
+            if (emergencia) {
+                abrirWhatsApp(contactos.indexOf(emergencia));
+            } else if (contactos.length > 0) {
+                abrirWhatsApp(0);
+            } else {
+                mostrarNotificacion("⚠️ No hay contactos", "warning");
+            }
+        });
+
+        // ==================== AÑADIR CONTACTO MANUAL ====================
+        document.getElementById('btnAdd').addEventListener('click', () => {
+            const nombre = prompt('👤 Nombre:');
+            if (!nombre) return;
+            const telefono = prompt('📱 Teléfono:');
+            if (!telefono) return;
+            const email = prompt('📧 Email:');
+            const emergencia = confirm('🚨 ¿Emergencia?');
+            
+            // ✅ MARCAR ORIGEN COMO MANUAL
+            contactos.push({ 
+                nombre, 
+                telefono, 
+                email: email || '', 
+                emergencia,
+                origen: 'manual'
+            });
+            
+            renderizar();
+            guardarLocal();
+            mostrarNotificacion(`➕ Añadido: ${nombre} (manual)`, 'success');
+        });
+
+        // ==================== INICIO ====================
+        (function init() {
+            verificarNFC();
+            cargarContactos();
+            if (!navigator.onLine) {
+                document.getElementById('badgeOffline').classList.add('show');
+            }
+        })();
+    </script>
+
+</body>
+</html>
